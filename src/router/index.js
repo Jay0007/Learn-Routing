@@ -1,27 +1,68 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
 import Home from "../views/Home.vue";
+import store from "../store/index"
 
 Vue.use(VueRouter);
 
-const routes = [
-  {
+const routes = [{
+
     path: "/",
     name: "Home",
     component: Home,
+    props: true,
   },
   {
-    path: "/about",
-    name: "About",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
+    path: "/destination/:slug",
+    name: "DestinationDetails",
+    props: true,
+    children: [{
+      path: ":experienceslug",
+      name: "ExperienceDetails",
+      props: true,
+      component: () =>
+        import( /* webpackChunkName : "experiencedetails"*/ "../views/ExperienceDetails.vue")
+    }],
     component: () =>
-      import(/* webpackChunkName: "about" */ "../views/About.vue"),
+      import( /* webpackChunkName : "destinationdetails"*/ "../views/DestinationDetails.vue"),
+    beforeEnter: (to, from, next) => {
+      const exist = store.state.destinations.find(
+        destination => destination.slug === to.params.slug
+      )
+      if (exist) {
+        next()
+      } else {
+        next({
+          name: 'NotFound'
+        })
+      }
+    }
+
   },
+  {
+    path: "/404",
+    alias: "*",
+    name: "NotFound",
+    commponent: () => import( /* webpackChunkName : "notfound"*/ "../views/NotFound.vue")
+  }
 ];
 
 const router = new VueRouter({
+  mode: 'history',
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      const position = {}
+      if (to.hash) {
+        position.selector = to.hash
+        if (document.querySelector(to.hash)) {
+          return position
+        }
+        return false
+      }
+    }
+  },
   routes,
 });
 
